@@ -30,6 +30,8 @@ sudo apt-get install poppler-utils libpoppler-cpp-dev
 poetry install
 ```
 
+There is an [installation script](./install.sh) for Linux in this repository.
+
 ## Configuration
 
 The application is configured used environment variables which you can set in an `.env` file.
