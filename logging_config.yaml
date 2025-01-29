@@ -1,0 +1,18 @@
+# logging_config.yaml
+version: 1
+formatters:
+  detailed:
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: detailed
+loggers:
+  pdf_to_markdown:
+    level: INFO
+    handlers: [console]
+    propagate: no
+root:
+  level: WARNING
+  handlers: [console]
