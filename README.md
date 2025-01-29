@@ -1,6 +1,6 @@
 # PDF to Markdown
 
-This project contains a command line tool to convert PDF to markdown. It uses image conversion and a LLM to convert the images to markdown.
+This project contains a command line tool to convert PDF to markdown. It uses image conversion and an LLM to convert the images to markdown.
 
 ## Install
 
@@ -20,6 +20,13 @@ pip install poetry
 # Windows
 pip install cmake
 conda install poppler poppler-qt
+# End Windows
+# Linux
+sudo apt update
+sudo apt install g++ -y
+sudo apt install pkg-config -y
+sudo apt-get install poppler-utils libpoppler-cpp-dev
+# End Linux
 poetry install
 ```
 
