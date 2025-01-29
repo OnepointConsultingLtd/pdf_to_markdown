@@ -34,7 +34,9 @@ There is an [installation script](./install.sh) for Linux in this repository.
 
 ## Configuration
 
-The application is configured used environment variables which you can set in an `.env` file.
+The application is configured used environment variables which you can set in an `.env` file. Check the [.env_local](./.env_local) file for the names of the variables that you will need.
+
+You will need an Open AI key to run the 
 
 ## Usage of the command line application
 
