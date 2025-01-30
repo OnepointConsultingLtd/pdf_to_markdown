@@ -2,12 +2,12 @@ from pathlib import Path
 import click
 import asyncio
 
-from pdf_to_markdown.service.pdf_to_text import (
+from pdf_to_markdown_llm.service.pdf_to_text import (
     convert_single_file,
     compact_markdown_files_from_list,
     convert_compact_pdfs,
 )
-from pdf_to_markdown.model.process_results import ProcessResults
+from pdf_to_markdown_llm.model.process_results import ProcessResults
 
 
 @click.group()

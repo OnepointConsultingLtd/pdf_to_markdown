@@ -36,19 +36,19 @@ There is an [installation script](./install.sh) for Linux in this repository.
 
 The application is configured used environment variables which you can set in an `.env` file. Check the [.env_local](./.env_local) file for the names of the variables that you will need.
 
-You will need an Open AI key to run the 
+You will need an Open AI key to run the PDF conversion.
 
 ## Usage of the command line application
 
 Example on how to convert multiple pdf files:
 
 ```
-python ./pdf_to_markdown/main/cli.py convert-files -f ./pdfs/oecd/002b3a39-en.pdf -f ./pdfs/oecd/ee6587fd-en.pdf
+python ./pdf_to_markdown_llm/main/cli.py convert-files -f ./pdfs/oecd/002b3a39-en.pdf -f ./pdfs/oecd/ee6587fd-en.pdf
 ```
 
 Example on how to convert all pdf files in a folder:
 
 ```
-python ./pdf_to_markdown/main/cli.py convert-in-dir --dirs ./pdfs/oecd
+python ./pdf_to_markdown_llm/main/cli.py convert-in-dir --dirs ./pdfs/oecd
 ```
 

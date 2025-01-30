@@ -1,8 +1,8 @@
 from pathlib import Path
 import asyncio
 
-from pdf_to_markdown.model.process_results import ProcessResults
-from pdf_to_markdown.service.pdf_to_text import (
+from pdf_to_markdown_llm.model.process_results import ProcessResults
+from pdf_to_markdown_llm.service.pdf_to_text import (
     encode_image,
     process_folders,
     convert_single_file,

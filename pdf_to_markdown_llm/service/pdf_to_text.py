@@ -12,9 +12,9 @@ from pdf2image import convert_from_path
 from openai import AsyncOpenAI
 from PIL import Image
 
-from pdf_to_markdown.config import cfg
-from pdf_to_markdown.logger import logger
-from pdf_to_markdown.model.process_results import ProcessResult, ProcessResults
+from pdf_to_markdown_llm.config import cfg
+from pdf_to_markdown_llm.logger import logger
+from pdf_to_markdown_llm.model.process_results import ProcessResult, ProcessResults
 
 CANNOT_CONVERT = "Cannot convert"
 

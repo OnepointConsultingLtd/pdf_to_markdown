@@ -1,9 +1,9 @@
 [project]
-name = "pdf-to-markdown"
+name = "pdf-to-markdown-llm"
 version = "0.1.0"
 description = "This project contains a command line tool to convert PDF to markdown. It uses image conversion and a LLM to convert the images to markdown."
 authors = [
-    {name = "Your Name",email = "you@example.com"}
+    {name = "Gil Fernandes",email = "gil.fernandes@onepointltd.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.13"

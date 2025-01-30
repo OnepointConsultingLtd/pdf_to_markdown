@@ -178,3 +178,10 @@ pyrightconfig.json
 poppler-24.08.0
 
 .vscode
+
+pdfs/who/*.md
+pdfs/who/*.jpg
+pdfs/oecd/*.md
+pdfs/oecd/*.jpg
+pdfs/oecd.zip
+pdfs/who.zip

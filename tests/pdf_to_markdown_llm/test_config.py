@@ -1,4 +1,4 @@
-from pdf_to_markdown.config import cfg
+from pdf_to_markdown_llm.config import cfg
 
 
 def test_cfg():
