@@ -38,6 +38,13 @@ The application is configured used environment variables which you can set in an
 
 You will need an Open AI key to run the PDF conversion.
 
+You will also need a Gemini API key.
+
+So you will need two environment variables:
+
+OPENAI_API_KEY
+GEMINI_API_KEY
+
 ## Usage of the command line application
 
 Example: how to convert multiple pdf files with the OpenAI engine:
