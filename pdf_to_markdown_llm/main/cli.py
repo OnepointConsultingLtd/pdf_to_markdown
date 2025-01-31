@@ -36,7 +36,7 @@ def cli():
     type=click.Choice([e.value for e in Engine], case_sensitive=False),
     default=Engine.OPENAI,
     show_default=True,
-    help="Convert single files using either OpenAI or Gemini (requires keys)."
+    help="Convert single files using either OpenAI or Gemini (requires keys).",
 )
 def convert_files(files: list[str], engine: str):
     for file in files:
@@ -48,7 +48,9 @@ def convert_files(files: list[str], engine: str):
         match engine:
             case Engine.OPENAI:
                 process_result = asyncio.run(convert_single_file(path))
-                markdown_path = compact_markdown_files_from_list(path, process_result.paths)#
+                markdown_path = compact_markdown_files_from_list(
+                    path, process_result.paths
+                )  #
             case Engine.GEMINI:
                 markdown_path = convert_single_pdf(path)
         click.secho(f"Finished converting {path} to {markdown_path}", fg="green")

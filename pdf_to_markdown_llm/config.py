@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class Config:
     openai_api_key = os.getenv("OPENAI_API_KEY")
     assert (
@@ -18,7 +19,9 @@ class Config:
     lzma_limit = int(os.getenv("LZMA_LIMIT", "10"))
 
     gemini_api_key = os.getenv("GEMINI_API_KEY")
-    assert gemini_api_key is not None and len(gemini_api_key), "Please specify the Gemini key."
+    assert gemini_api_key is not None and len(
+        gemini_api_key
+    ), "Please specify the Gemini key."
     gemini_model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
 
