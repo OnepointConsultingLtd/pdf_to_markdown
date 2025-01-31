@@ -1,6 +1,6 @@
 [project]
 name = "pdf-to-markdown-llm"
-version = "0.1.4"
+version = "0.1.5"
 description = "This project contains a command line tool to convert PDF to markdown. It uses image conversion and a LLM to convert the images to markdown."
 authors = [
     {name = "Gil Fernandes",email = "gil.fernandes@onepointltd.com"}

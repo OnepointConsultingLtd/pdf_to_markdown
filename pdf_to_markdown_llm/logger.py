@@ -4,7 +4,7 @@ import logging
 import logging.config
 import yaml
 
-with open(Path(__file__)/"../../logging_config.yaml", "r") as f:
+with open(Path(__file__)/"../logging_config.yaml", "r") as f:
     config = yaml.safe_load(f)
     logging.config.dictConfig(config)
 
