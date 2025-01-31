@@ -1,4 +1,5 @@
 from pathlib import Path
+from enum import StrEnum
 import click
 import asyncio
 
@@ -8,6 +9,12 @@ from pdf_to_markdown_llm.service.pdf_to_text import (
     convert_compact_pdfs,
 )
 from pdf_to_markdown_llm.model.process_results import ProcessResults
+from pdf_to_markdown_llm.service.gemini_pdf_to_text import convert_single_pdf
+
+
+class Engine(StrEnum):
+    OPENAI = "openai"
+    GEMINI = "gemini"
 
 
 @click.group()
@@ -23,14 +30,27 @@ def cli():
     multiple=True,
     help="Specify multiple pdf file paths.",
 )
-def convert_files(files: list[str]):
+@click.option(
+    "--engine",
+    "-e",
+    type=click.Choice([e.value for e in Engine], case_sensitive=False),
+    default=Engine.OPENAI,
+    show_default=True,
+    help="Convert single files using either OpenAI or Gemini (requires keys)."
+)
+def convert_files(files: list[str], engine: str):
     for file in files:
         path = Path(file)
         if not path.exists():
             click.secho("Error: File not found!", fg="red", err=True)
         click.secho(f"Processing {path}", fg="green")
-        process_result = asyncio.run(convert_single_file(path))
-        markdown_path = compact_markdown_files_from_list(path, process_result.paths)
+        click.secho(f"Using {engine} engine.", fg="green")
+        match engine:
+            case Engine.OPENAI:
+                process_result = asyncio.run(convert_single_file(path))
+                markdown_path = compact_markdown_files_from_list(path, process_result.paths)#
+            case Engine.GEMINI:
+                markdown_path = convert_single_pdf(path)
         click.secho(f"Finished converting {path} to {markdown_path}", fg="green")
 
 

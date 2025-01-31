@@ -17,5 +17,9 @@ class Config:
     max_retries = int(os.getenv("MAX_RETRIES", "3"))
     lzma_limit = int(os.getenv("LZMA_LIMIT", "10"))
 
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    assert gemini_api_key is not None and len(gemini_api_key), "Please specify the Gemini key."
+    gemini_model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+
 
 cfg = Config()

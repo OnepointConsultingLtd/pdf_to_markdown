@@ -40,15 +40,21 @@ You will need an Open AI key to run the PDF conversion.
 
 ## Usage of the command line application
 
-Example on how to convert multiple pdf files:
+Example: how to convert multiple pdf files with the OpenAI engine:
 
-```
+```bash
 python ./pdf_to_markdown_llm/main/cli.py convert-files -f ./pdfs/oecd/002b3a39-en.pdf -f ./pdfs/oecd/ee6587fd-en.pdf
 ```
 
-Example on how to convert all pdf files in a folder:
+Example: how to convert a single file with Gemini model:
 
+```bash
+python ./pdf_to_markdown_llm/main/cli.py convert-files -f ./pdfs/oecd/002b3a39-en.pdf -e gemini
 ```
+
+Example: how to convert all pdf files in a folder:
+
+```bash
 python ./pdf_to_markdown_llm/main/cli.py convert-in-dir --dirs ./pdfs/oecd
 ```
 

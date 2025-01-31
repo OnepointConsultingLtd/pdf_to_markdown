@@ -1,19 +1,20 @@
 [project]
 name = "pdf-to-markdown-llm"
-version = "0.1.0"
+version = "0.1.1"
 description = "This project contains a command line tool to convert PDF to markdown. It uses image conversion and a LLM to convert the images to markdown."
 authors = [
     {name = "Gil Fernandes",email = "gil.fernandes@onepointltd.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12,<3.14"
 dependencies = [
     "python-dotenv (>=1.0.1,<2.0.0)",
     "openai (>=1.60.2,<2.0.0)",
     "pdf2image (>=1.17.0,<2.0.0)",
     "pyyaml (>=6.0.2,<7.0.0)",
     "python-poppler (>=0.4.1,<0.5.0)",
-    "click (>=8.1.8,<9.0.0)"
+    "click (>=8.1.8,<9.0.0)",
+    "google-generativeai (>=0.8.4,<0.9.0)"
 ]
 
 

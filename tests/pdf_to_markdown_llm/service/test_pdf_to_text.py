@@ -3,7 +3,7 @@ import asyncio
 
 from pdf_to_markdown_llm.model.process_results import ProcessResults
 from pdf_to_markdown_llm.service.pdf_to_text import (
-    encode_image,
+    encode_file,
     process_folders,
     convert_single_file,
     convert_all_pdfs,
@@ -15,7 +15,7 @@ from pdf_to_markdown_llm.service.pdf_to_text import (
 def test_encode_image():
     image_file = Path(__file__) / "../../../../images/cat.jpg"
     assert image_file.exists(), f"Cannot find {image_file}"
-    encoded = encode_image(image_file)
+    encoded = encode_file(image_file)
     assert encoded is not None, "Encoded is none"
     assert len(encoded) > 0, "Encoded string should not be empty"
 
@@ -37,6 +37,7 @@ def test_convert_single_file():
 
 
 def test_convert_all_pdfs():
+    # Note: these tests are very slow.
     paths = [
         Path(__file__) / "../../../../pdfs/oecd",
         Path(__file__) / "../../../../pdfs/who",

@@ -4,7 +4,7 @@ import re
 import zipfile
 
 from datetime import datetime
-from pathlib import Path  #
+from pathlib import Path
 from typing import Iterator
 from collections import defaultdict
 
@@ -17,11 +17,16 @@ from pdf_to_markdown_llm.logger import logger
 from pdf_to_markdown_llm.model.process_results import ProcessResult, ProcessResults
 
 CANNOT_CONVERT = "Cannot convert"
+PROMPT_CONVERSION = f"""Convert this pdf into markdown following these rules:
+    - IGNORE HEADERS AND FOOTERS.
+    - if you cannot convert the image to markdown, then just convert the image to plain text
+    - if you cannot convert the image to plain text, write exaclty: "{CANNOT_CONVERT}" and in the line below specify the reason.
+    """
 
 openai_client = AsyncOpenAI()
 
 
-def encode_image(image_path: Path) -> str:
+def encode_file(image_path: Path) -> str:
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
@@ -110,7 +115,7 @@ async def __process_page(
             page_file = file.parent / f"{new_file_name}_{current_date_time}_{i+1}.jpg"
             logger.info(f"Processing {page_file}")
             page.save(page_file, "JPEG")
-            image_data = encode_image(page_file)
+            image_data = encode_file(page_file)
             new_file = file.parent / f"{new_file_name}_{i+1}.md"
             if not new_file.exists():
                 messages = __build_messages(image_data)
@@ -146,11 +151,7 @@ def __build_messages(image_data: str):
             "content": [
                 {
                     "type": "text",
-                    "text": f"""Convert this pdf into markdown following these rules:
-    - IGNORE HEADERS AND FOOTERS.
-    - if you cannot convert the image to markdown, then just convert the image to plain text
-    - if you cannot convert the image to plain text, write exaclty: "{CANNOT_CONVERT}" and in the line below specify the reason.
-    """,
+                    "text": PROMPT_CONVERSION,
                 },
                 {
                     "type": "text",
