@@ -2,6 +2,7 @@ import base64
 import asyncio
 import re
 import zipfile
+from enum import StrEnum
 
 from datetime import datetime
 from pathlib import Path
@@ -17,11 +18,32 @@ from pdf_to_markdown_llm.logger import logger
 from pdf_to_markdown_llm.model.process_results import ProcessResult, ProcessResults
 
 CANNOT_CONVERT = "Cannot convert"
-PROMPT_CONVERSION = f"""Convert this pdf into markdown following these rules:
-    - IGNORE HEADERS AND FOOTERS.
-    - if you cannot convert the image to markdown, then just convert the image to plain text
-    - if you cannot convert the image to plain text, write exaclty: "{CANNOT_CONVERT}" and in the line below specify the reason.
-    """
+
+
+class SupportedFormat(StrEnum):
+    MARKDOWN = "markdown"
+    HTML = "html"
+
+
+FILE_EXTENSION = {
+    SupportedFormat.MARKDOWN: "md",
+    SupportedFormat.HTML: "html",
+}
+
+
+CONVERSION_PROMPTS = {
+    SupportedFormat.MARKDOWN: f"""Convert this pdf into markdown following these rules:
+- IGNORE HEADERS AND FOOTERS.
+- if you cannot convert the image to markdown, then just convert the image to plain text
+- if you cannot convert the image to plain text, write exaclty: "{CANNOT_CONVERT}" and in the line below specify the reason.
+    """,
+    SupportedFormat.HTML: f"""Convert this pdf into html following these rules:
+- IGNORE HEADERS AND FOOTERS.
+- if you cannot convert the image to html, then just convert the image to plain text
+- if you cannot convert the image to plain text, write exaclty: "{CANNOT_CONVERT}" and in the line below specify the reason.
+- Do not add <head> or <body> elements, just generate the html that you otherwise would include in an existing <body> element.
+    """,
+}
 
 openai_client = AsyncOpenAI()
 
@@ -31,12 +53,14 @@ def encode_file(image_path: Path) -> str:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
-async def convert_single_file(file: Path) -> ProcessResult:
+async def convert_single_file(
+    file: Path, format: SupportedFormat = SupportedFormat.MARKDOWN
+) -> ProcessResult:
     assert file.exists(), f"Path {file} does not exist."
     current_date_time = datetime.now().isoformat()
     current_date_time = re.sub(r"[:.]", "", current_date_time)
     new_file_name = re.sub(r"\s+", "_", file.stem)
-    return await convert_pdf_to_markdown(file, current_date_time, new_file_name)
+    return await convert_pdf_to_markdown(file, current_date_time, new_file_name, format)
 
 
 def process_folders(folders: list[str]) -> Iterator[Path]:
@@ -54,7 +78,7 @@ async def convert_all_pdfs(
     process_results = []
     for path in process_folders(folders):
         if delete_previous:
-            remove_expressions = ["**/*.txt", "**/*.jpg", "**/*.md"]
+            remove_expressions = ["**/*.txt", "**/*.jpg", "**/*.md", "**/*.html"]
             for expression in remove_expressions:
                 for txt_file in path.rglob(expression):
                     txt_file.unlink()
@@ -78,7 +102,7 @@ async def convert_compact_pdfs(
 
 
 async def convert_pdf_to_markdown(
-    file: Path, current_date_time: int, new_file_name: str
+    file: Path, current_date_time: int, new_file_name: str, format: SupportedFormat
 ) -> ProcessResult:
     process_result = ProcessResult([], [])
     try:
@@ -90,7 +114,12 @@ async def convert_pdf_to_markdown(
         for i, batch in enumerate(batches):
             asynch_batch = [
                 __process_page(
-                    file, current_date_time, new_file_name, j + cfg.batch_size * i, page
+                    file,
+                    current_date_time,
+                    new_file_name,
+                    j + cfg.batch_size * i,
+                    page,
+                    format,
                 )
                 for j, page in enumerate(batch)
             ]
@@ -105,8 +134,14 @@ async def convert_pdf_to_markdown(
 
 
 async def __process_page(
-    file: Path, current_date_time: str, new_file_name: str, i: int, page: Image.Image
+    file: Path,
+    current_date_time: str,
+    new_file_name: str,
+    i: int,
+    page: Image.Image,
+    format: SupportedFormat,
 ) -> ProcessResult:
+    logger.info(f"Format: {format}.")
     success = False
     retry_count = 0
     process_result = ProcessResult([], [])
@@ -116,9 +151,11 @@ async def __process_page(
             logger.info(f"Processing {page_file}")
             page.save(page_file, "JPEG")
             image_data = encode_file(page_file)
-            new_file = file.parent / f"{new_file_name}_{i+1}.md"
+            file_extension = FILE_EXTENSION[format]
+            new_file = file.parent / f"{new_file_name}_{i+1}.{file_extension}"
+            new_file = new_file.resolve()
             if not new_file.exists():
-                messages = __build_messages(image_data)
+                messages = __build_messages(image_data, format)
                 response = await openai_client.chat.completions.create(
                     model=cfg.openai_model, messages=messages
                 )
@@ -135,7 +172,8 @@ async def __process_page(
     return process_result
 
 
-def __build_messages(image_data: str):
+def __build_messages(image_data: str, format: SupportedFormat):
+
     messages = [
         {
             "role": "system",
@@ -151,7 +189,7 @@ def __build_messages(image_data: str):
             "content": [
                 {
                     "type": "text",
-                    "text": PROMPT_CONVERSION,
+                    "text": CONVERSION_PROMPTS[format],
                 },
                 {
                     "type": "text",
@@ -169,25 +207,33 @@ def __build_messages(image_data: str):
     return messages
 
 
-async def compact_files(folders: list[str]) -> dict[Path, list[Path]]:
+async def compact_files(
+    folders: list[str], format: SupportedFormat
+) -> dict[Path, list[Path]]:
     all_aggregate_files = {}
     for path in process_folders(folders):
-        previous_files = path.rglob("**/*_aggregate.md")
+        file_extension = FILE_EXTENSION[format]
+        previous_files = path.rglob(f"**/*_aggregate.{file_extension}")
         for pf in previous_files:
             pf.unlink()  # Delete previous files
-        md_files = path.rglob("**/*md")
+        files = path.rglob(f"**/*{file_extension}")
         aggregate_dict = defaultdict(list)
-        for md_file in md_files:
-            if "_aggregate" not in md_file.name and re.match(
-                r".+\d+\.md", md_file.name
+        for file in files:
+            if "_aggregate" not in file.name and re.match(
+                r".+\d+\." + file_extension, file.name
             ):
-                key = re.sub(r"(.+)\_\d+\.md", r"\1", md_file.name)
-                aggregate_dict[md_file.parent / f"{key}_aggregate.md"].append(md_file)
-        all_aggregate_files[path] = compact_markdown_files(aggregate_dict)
+                key = re.sub(r"(.+)\_\d+\." + file_extension, r"\1", file.name)
+                aggregate_dict[
+                    file.parent / f"{key}_aggregate." + file_extension
+                ].append(file)
+        all_aggregate_files[path] = compact_markdown_files(aggregate_dict, format)
     return all_aggregate_files
 
 
-def compact_markdown_files(aggregate_dict: dict[Path, list[Path]]) -> list[Path]:
+def compact_markdown_files(
+    aggregate_dict: dict[Path, list[Path]],
+    format: SupportedFormat = SupportedFormat.MARKDOWN,
+) -> list[Path]:
     aggregate_files = []
     for target_file, pages in aggregate_dict.items():
         with open(target_file, "wt", encoding="utf-8") as f:
@@ -196,29 +242,37 @@ def compact_markdown_files(aggregate_dict: dict[Path, list[Path]]) -> list[Path]
                 if CANNOT_CONVERT not in content:
                     f.write(content)
             f.write("\n")
-        remove_markdown_tags(target_file, True)
+        remove_markdown_tags(target_file, True, format)
         logger.info(f"Finished {target_file}")
         aggregate_files.append(target_file)
     return aggregate_files
 
 
 def compact_markdown_files_from_list(
-    markdown_file: Path, paths: list[Path]
+    markdown_file: Path,
+    paths: list[Path],
+    format: SupportedFormat = SupportedFormat.MARKDOWN,
 ) -> Path | None:
-    target_file = markdown_file.parent / f"{markdown_file.stem}.md"
+    target_file = (
+        markdown_file.parent / f"{markdown_file.stem}.{FILE_EXTENSION[format]}"
+    )
     aggregate_dict = {target_file: paths}
-    file_list = compact_markdown_files(aggregate_dict)
+    file_list = compact_markdown_files(aggregate_dict, format)
     if len(file_list):
         return file_list[0]
     return None
 
 
-def remove_markdown_tags(markdown_file: Path, override: bool = False):
+def remove_markdown_tags(
+    markdown_file: Path,
+    override: bool = False,
+    format: SupportedFormat = SupportedFormat.MARKDOWN,
+):
     output = []
-    markdown_start = "```markdown"
+    markdown_start = f"```{format}"
     with open(markdown_file, "r", encoding="utf-8") as f:
         for line in f:
-            if line.startswith(markdown_start):
+            if markdown_start in line:
                 output.append(line.replace(markdown_start, ""))
             elif line.startswith("```"):
                 output.append(line.replace("```", ""))

@@ -4,6 +4,7 @@ import click
 import asyncio
 
 from pdf_to_markdown_llm.service.pdf_to_text import (
+    SupportedFormat,
     convert_single_file,
     compact_markdown_files_from_list,
     convert_compact_pdfs,
@@ -38,7 +39,17 @@ def cli():
     show_default=True,
     help="Convert single files using either OpenAI or Gemini (requires keys).",
 )
-def convert_files(files: list[str], engine: str):
+@click.option(
+    "--format",
+    "-t",
+    type=click.Choice(
+        [format.value for format in SupportedFormat], case_sensitive=False
+    ),
+    multiple=False,
+    default=SupportedFormat.MARKDOWN,
+    help="Specify the file format",
+)
+def convert_files(files: list[str], engine: str, format: str):
     for file in files:
         path = Path(file)
         if not path.exists():
@@ -47,11 +58,12 @@ def convert_files(files: list[str], engine: str):
         click.secho(f"Using {engine} engine.", fg="green")
         match engine:
             case Engine.OPENAI:
-                process_result = asyncio.run(convert_single_file(path))
+                process_result = asyncio.run(convert_single_file(path, format))
                 markdown_path = compact_markdown_files_from_list(
-                    path, process_result.paths
-                )  #
+                    path, process_result.paths, format
+                )
             case Engine.GEMINI:
+                # Only supports markdown
                 markdown_path = convert_single_pdf(path)
         click.secho(f"Finished converting {path} to {markdown_path}", fg="green")
 

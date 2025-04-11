@@ -5,8 +5,8 @@ import logging
 import logging.config
 import yaml
 
-log_config = (Path(__file__)/"../logging_config.yaml").resolve()
-try:    
+log_config = (Path(__file__) / "../logging_config.yaml").resolve()
+try:
     with open(log_config, "r") as f:
         config = yaml.safe_load(f)
         logging.config.dictConfig(config)
@@ -17,7 +17,7 @@ except Exception as e:
         "formatters": {
             "default": {
                 "format": "[%(asctime)s] %(levelname)s - %(message)s",
-                "datefmt": "%Y-%m-%d %H:%M:%S"
+                "datefmt": "%Y-%m-%d %H:%M:%S",
             }
         },
         "handlers": {

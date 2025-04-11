@@ -1,7 +1,11 @@
 from pathlib import Path
 
 from pdf_to_markdown_llm.config import cfg
-from pdf_to_markdown_llm.service.pdf_to_text import encode_file, PROMPT_CONVERSION
+from pdf_to_markdown_llm.service.pdf_to_text import (
+    encode_file,
+    CONVERSION_PROMPTS,
+    SupportedFormat,
+)
 
 import google.generativeai as genai
 
@@ -11,7 +15,9 @@ Please do not summarize the text, but instead convert the whole document to mark
 """
 
 
-def convert_single_pdf(pdf_file: Path) -> Path:
+def convert_single_pdf(
+    pdf_file: Path, format: SupportedFormat = SupportedFormat.MARKDOWN
+) -> Path:
     assert pdf_file.exists(), f"Path {pdf_file} does not exist."
     extension = pdf_file.suffix
     assert (
@@ -22,7 +28,7 @@ def convert_single_pdf(pdf_file: Path) -> Path:
     response = model.generate_content(
         [
             {"mime_type": "application/pdf", "data": encoded_data},
-            f"""{PROMPT_CONVERSION}{EXTRA_PROMPT}""",
+            f"""{CONVERSION_PROMPTS[format]}{EXTRA_PROMPT}""",
         ]
     )
     md_file = pdf_file.parent / f"{pdf_file.stem}.md"

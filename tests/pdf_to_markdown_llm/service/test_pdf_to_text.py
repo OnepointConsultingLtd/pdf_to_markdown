@@ -3,6 +3,7 @@ import asyncio
 
 from pdf_to_markdown_llm.model.process_results import ProcessResults
 from pdf_to_markdown_llm.service.pdf_to_text import (
+    SupportedFormat,
     encode_file,
     process_folders,
     convert_single_file,
@@ -26,6 +27,22 @@ def test_process_folders():
     for file in process_folders([base_folder.absolute().as_posix()]):
         found = file is not None
     assert found, "Could not find 'images' folder"
+
+
+def test_convert_simple_pdf():
+    pdf = Path(__file__) / "../../../../pdfs/simple/OTT Webinar 6 - AI Agents.pdf"
+    assert pdf.exists(), "Cannot find the PDF file."
+    result = asyncio.run(convert_single_file(pdf))
+    assert result is not None, "There should be a result"
+    assert len(result.exceptions) == 0, f"There are exceptions: {result.exceptions}"
+
+
+def test_convert_simple_pdf_html():
+    pdf = Path(__file__) / "../../../../pdfs/simple/OTT Webinar 6 - AI Agents.pdf"
+    assert pdf.exists(), "Cannot find the PDF file."
+    result = asyncio.run(convert_single_file(pdf, SupportedFormat.HTML))
+    assert result is not None, "There should be a result"
+    assert len(result.exceptions) == 0, f"There are exceptions: {result.exceptions}"
 
 
 def test_convert_single_file():
