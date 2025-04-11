@@ -3,7 +3,7 @@ from enum import StrEnum
 import click
 import asyncio
 
-from pdf_to_markdown_llm.service.pdf_to_text import (
+from pdf_to_markdown_llm.service.openai_pdf_to_text import (
     SupportedFormat,
     convert_single_file,
     compact_markdown_files_from_list,

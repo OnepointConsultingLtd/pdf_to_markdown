@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from pdf_to_markdown_llm.config import cfg
-from pdf_to_markdown_llm.service.pdf_to_text import (
+from pdf_to_markdown_llm.service.openai_pdf_to_text import (
     encode_file,
     CONVERSION_PROMPTS,
     SupportedFormat,

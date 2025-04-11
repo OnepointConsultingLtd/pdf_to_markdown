@@ -1,6 +1,7 @@
 # PDF to Markdown
 
-This project contains a command line tool to convert PDF to markdown. It uses image conversion and an LLM to convert the images to markdown.
+This project contains a command line tool to convert PDF and Word documents to markdown. 
+It uses image conversion and an LLM to convert the images to markdown.
 
 ## Install
 
@@ -14,12 +15,12 @@ $env:PKG_CONFIG_PATH="<download_folder>\poppler-24.08.0\Library\lib\pkgconfig"
 
 ```bash
 # conda remove -n pdf_to_markdown --all
-conda create -n pdf_to_markdown python=3.13
-conda activate pdf_to_markdown
-pip install poetry
+uv venv
+# .venv\Scripts\activate
+source .venv/bin/activate
+uv sync
 # Windows
 pip install cmake
-conda install poppler poppler-qt
 # End Windows
 # Linux
 sudo apt update
@@ -27,7 +28,6 @@ sudo apt install g++ -y
 sudo apt install pkg-config -y
 sudo apt-get install poppler-utils libpoppler-cpp-dev
 # End Linux
-poetry install
 ```
 
 There is an [installation script](./install.sh) for Linux in this repository.
@@ -51,6 +51,12 @@ Example: how to convert multiple pdf files with the OpenAI engine:
 
 ```bash
 python ./pdf_to_markdown_llm/main/cli.py convert-files -f ./pdfs/oecd/002b3a39-en.pdf -f ./pdfs/oecd/ee6587fd-en.pdf
+```
+
+Example: how to convert a Word file with the OpenAI engine:
+
+```bash
+python ./pdf_to_markdown_llm/main/cli.py convert-files -f "./docs/Explainability March 2025.docx"
 ```
 
 Example: how to convert a single file with Gemini model:

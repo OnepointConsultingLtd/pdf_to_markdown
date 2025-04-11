@@ -2,7 +2,7 @@ from pathlib import Path
 import asyncio
 
 from pdf_to_markdown_llm.model.process_results import ProcessResults
-from pdf_to_markdown_llm.service.pdf_to_text import (
+from pdf_to_markdown_llm.service.openai_pdf_to_text import (
     SupportedFormat,
     encode_file,
     process_folders,
@@ -10,7 +10,9 @@ from pdf_to_markdown_llm.service.pdf_to_text import (
     convert_all_pdfs,
     convert_compact_pdfs,
     zip_md_files,
+    convert_word_to_markdown
 )
+from pdf_to_markdown_llm.model.conversion import ConversionInput, conversion_input_from_file
 
 
 def test_encode_image():
@@ -85,3 +87,13 @@ def test_zip_md_files():
     assert process_results.files_dict is not None
     zip_files = zip_md_files(process_results.files_dict)
     assert len(zip_files) == 2
+
+
+def test_convert_word_to_markdown():
+    word = Path(__file__) / "../../../../docs/sample1.docx"
+    assert word.exists(), "Cannot find the Word file."
+    conversion_input = conversion_input_from_file(word, SupportedFormat.MARKDOWN)
+    result = asyncio.run(convert_word_to_markdown(conversion_input))
+    assert result is not None, "There should be a result"
+    assert len(result.paths), "There are no result paths"
+

@@ -2,7 +2,6 @@ import base64
 import asyncio
 import re
 import zipfile
-from enum import StrEnum
 
 from datetime import datetime
 from pathlib import Path
@@ -16,19 +15,17 @@ from PIL import Image
 from pdf_to_markdown_llm.config import cfg
 from pdf_to_markdown_llm.logger import logger
 from pdf_to_markdown_llm.model.process_results import ProcessResult, ProcessResults
+from pdf_to_markdown_llm.model.conversion import (
+    ConversionInput,
+    SupportedFormat,
+    FILE_EXTENSION,
+    conversion_input_from_file
+)
+
+from spire.doc import Document, ImageType
+
 
 CANNOT_CONVERT = "Cannot convert"
-
-
-class SupportedFormat(StrEnum):
-    MARKDOWN = "markdown"
-    HTML = "html"
-
-
-FILE_EXTENSION = {
-    SupportedFormat.MARKDOWN: "md",
-    SupportedFormat.HTML: "html",
-}
 
 
 CONVERSION_PROMPTS = {
@@ -57,10 +54,15 @@ async def convert_single_file(
     file: Path, format: SupportedFormat = SupportedFormat.MARKDOWN
 ) -> ProcessResult:
     assert file.exists(), f"Path {file} does not exist."
-    current_date_time = datetime.now().isoformat()
-    current_date_time = re.sub(r"[:.]", "", current_date_time)
-    new_file_name = re.sub(r"\s+", "_", file.stem)
-    return await convert_pdf_to_markdown(file, current_date_time, new_file_name, format)
+    conversion_input = conversion_input_from_file(file, format)
+    extension = file.suffix.lower()
+    match extension:
+        case ".pdf":
+            return await convert_pdf_to_markdown(conversion_input)
+        case ".docx":
+            return await convert_word_to_markdown(conversion_input)
+        case _:
+            raise ValueError(f"Unsupported file extension: {extension}")
 
 
 def process_folders(folders: list[str]) -> Iterator[Path]:
@@ -101,9 +103,62 @@ async def convert_compact_pdfs(
     )
 
 
-async def convert_pdf_to_markdown(
-    file: Path, current_date_time: int, new_file_name: str, format: SupportedFormat
-) -> ProcessResult:
+async def convert_word_to_markdown(conversion_input: ConversionInput) -> ProcessResult:
+    """
+    Convert an MS Word file to markdown using OpenAI's API.
+
+    Args:
+        file (Path): The path to the PDF file to convert.
+        current_date_time (int): The current date and time.
+        new_file_name (str): The name of the new file.
+        format (SupportedFormat): The format to convert the PDF to.
+    """
+    file, current_date_time, new_file_name, format = (
+        conversion_input.file,
+        conversion_input.current_date_time,
+        conversion_input.new_file_name,
+        conversion_input.format,
+    )
+    document = Document()
+    document.LoadFromFile(file.as_posix())
+    process_result = ProcessResult([], [])
+    for i, image_stream in enumerate(document.SaveImageToStreams(ImageType.Bitmap)):
+        try:
+            page_file = file.parent / f"{new_file_name}_{current_date_time}_{i+1}.jpg"
+            page_file.write_bytes(image_stream.ToArray())
+            page_image = Image.open(page_file)
+            process_result_temp = await __process_page(
+                file,
+                current_date_time,
+                new_file_name,
+                i,
+                page_image,
+                format,
+            )
+            process_result.exceptions.extend(process_result_temp.exceptions)
+            process_result.paths.extend(process_result_temp.paths)
+        except Exception as e:
+            logger.exception(f"Cannot process {file}")
+            process_result.exceptions.append(e)
+    document.Close()
+    return process_result
+
+async def convert_pdf_to_markdown(conversion_input: ConversionInput) -> ProcessResult:
+    """
+    Convert a PDF file to markdown using OpenAI's API.
+
+    Args:
+        file (Path): The path to the PDF file to convert.
+        current_date_time (int): The current date and time.
+        new_file_name (str): The name of the new file.
+        format (SupportedFormat): The format to convert the PDF to.
+    """
+    file, current_date_time, new_file_name, format = (
+        conversion_input.file,
+        conversion_input.current_date_time,
+        conversion_input.new_file_name,
+        conversion_input.format,
+    )
     process_result = ProcessResult([], [])
     try:
         pages = convert_from_path(file)
@@ -147,8 +202,10 @@ async def __process_page(
     process_result = ProcessResult([], [])
     while not success and retry_count < cfg.max_retries:
         try:
-            page_file = file.parent / f"{new_file_name}_{current_date_time}_{i+1}.jpg"
+            page_file = (file.parent / f"{new_file_name}_{current_date_time}_{i+1}.jpg").resolve()
             logger.info(f"Processing {page_file}")
+            if page.mode in ('RGBA', 'LA'):
+                page = page.convert('RGB')
             page.save(page_file, "JPEG")
             image_data = encode_file(page_file)
             file_extension = FILE_EXTENSION[format]
