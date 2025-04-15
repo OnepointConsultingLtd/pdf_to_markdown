@@ -53,10 +53,16 @@ Example: how to convert multiple pdf files with the OpenAI engine:
 python ./pdf_to_markdown_llm/main/cli.py convert-files -f ./pdfs/oecd/002b3a39-en.pdf -f ./pdfs/oecd/ee6587fd-en.pdf
 ```
 
-Example: how to convert a Word file with the OpenAI engine:
+Example: how to convert a Word file to markdown with the OpenAI engine:
 
 ```bash
 python ./pdf_to_markdown_llm/main/cli.py convert-files -f "./docs/Explainability March 2025.docx"
+```
+
+Example: how to convert a Word file to html with the OpenAI engine:
+
+```bash
+python ./pdf_to_markdown_llm/main/cli.py convert-files -f "./docs/bk/Pour INSCRIPTION en ligne MARCORIGNAN .docx" -t html
 ```
 
 Example: how to convert a single file with Gemini model:
