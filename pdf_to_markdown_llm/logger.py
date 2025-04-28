@@ -14,6 +14,7 @@ except Exception as e:
     sys.stderr.write(f"Cannot find {log_config}: {e}\n")
     default_config = {
         "version": 1,
+        'disable_existing_loggers': False,
         "formatters": {
             "default": {
                 "format": "[%(asctime)s] %(levelname)s - %(message)s",
