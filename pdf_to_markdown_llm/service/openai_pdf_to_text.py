@@ -1,16 +1,14 @@
-import base64
 import asyncio
 import re
 import zipfile
 
-from datetime import datetime
 from pathlib import Path
-from typing import Iterator
 from collections import defaultdict
 
 from pdf2image import convert_from_path
 from openai import AsyncOpenAI
 from PIL import Image
+from spire.doc import Document, ImageType
 
 from pdf_to_markdown_llm.config import cfg
 from pdf_to_markdown_llm.logger import logger
@@ -19,10 +17,8 @@ from pdf_to_markdown_llm.model.conversion import (
     ConversionInput,
     SupportedFormat,
     FILE_EXTENSION,
-    conversion_input_from_file
 )
-
-from spire.doc import Document, ImageType
+from pdf_to_markdown_llm.service.conversion_support import encode_file, process_folders, convert_single_file, convert_image_to_file
 
 
 CANNOT_CONVERT = "Cannot convert"
@@ -45,35 +41,6 @@ CONVERSION_PROMPTS = {
 openai_client = AsyncOpenAI()
 
 
-def encode_file(image_path: Path) -> str:
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode("utf-8")
-
-
-async def convert_single_file(
-    file: Path, format: SupportedFormat = SupportedFormat.MARKDOWN
-) -> ProcessResult:
-    assert file.exists(), f"Path {file} does not exist."
-    conversion_input = conversion_input_from_file(file, format)
-    extension = file.suffix.lower()
-    match extension:
-        case ".pdf":
-            return await convert_pdf_to_markdown(conversion_input)
-        case ".docx":
-            return await convert_word_to_markdown(conversion_input)
-        case _:
-            raise ValueError(f"Unsupported file extension: {extension}")
-
-
-def process_folders(folders: list[str]) -> Iterator[Path]:
-    for arg in folders:
-        path = Path(arg)
-        if path.exists():
-            yield path
-        else:
-            logger.error(f"{path} does not exist.")
-
-
 async def convert_all_pdfs(
     folders: list[Path | str], delete_previous: bool = False
 ) -> list[ProcessResult]:
@@ -84,10 +51,15 @@ async def convert_all_pdfs(
             for expression in remove_expressions:
                 for txt_file in path.rglob(expression):
                     txt_file.unlink()
-        pdf_files = [file for file in path.rglob("*") if file.suffix.lower() == ".pdf"]
-        for pdf in pdf_files:
+        files = [file for file in path.rglob("*") if file.suffix.lower() == ".pdf"]
+        for pdf in files:
             logger.info(f"Started processing {pdf}")
-            process_result = await convert_single_file(pdf)
+            process_result = await convert_single_file(
+                pdf,
+                SupportedFormat.MARKDOWN,
+                convert_pdf_to_markdown,
+                convert_word_to_markdown,
+            )
             process_results.append(process_result)
             logger.info(f"Finished processing {pdf}")
     return process_results
@@ -142,6 +114,7 @@ async def convert_word_to_markdown(conversion_input: ConversionInput) -> Process
             process_result.exceptions.append(e)
     document.Close()
     return process_result
+
 
 async def convert_pdf_to_markdown(conversion_input: ConversionInput) -> ProcessResult:
     """
@@ -202,11 +175,10 @@ async def __process_page(
     process_result = ProcessResult([], [])
     while not success and retry_count < cfg.max_retries:
         try:
-            page_file = (file.parent / f"{new_file_name}_{current_date_time}_{i+1}.jpg").resolve()
-            logger.info(f"Processing {page_file}")
-            if page.mode in ('RGBA', 'LA'):
-                page = page.convert('RGB')
-            page.save(page_file, "JPEG")
+            page_file = (
+                file.parent / f"{new_file_name}_{current_date_time}_{i+1}.jpg"
+            ).resolve()
+            page_file = convert_image_to_file(page, page_file)
             image_data = encode_file(page_file)
             file_extension = FILE_EXTENSION[format]
             new_file = file.parent / f"{new_file_name}_{i+1}.{file_extension}"
@@ -265,7 +237,7 @@ def __build_messages(image_data: str, format: SupportedFormat):
 
 
 async def compact_files(
-    folders: list[str], format: SupportedFormat
+    folders: list[str], format: SupportedFormat = SupportedFormat.MARKDOWN
 ) -> dict[Path, list[Path]]:
     all_aggregate_files = {}
     for path in process_folders(folders):
@@ -281,7 +253,7 @@ async def compact_files(
             ):
                 key = re.sub(r"(.+)\_\d+\." + file_extension, r"\1", file.name)
                 aggregate_dict[
-                    file.parent / f"{key}_aggregate." + file_extension
+                    file.parent / (f"{key}_aggregate." + file_extension)
                 ].append(file)
         all_aggregate_files[path] = compact_markdown_files(aggregate_dict, format)
     return all_aggregate_files

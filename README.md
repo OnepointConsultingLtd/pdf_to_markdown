@@ -13,15 +13,18 @@ On Windows download the poppler library (e.g. poppler-24.08.0) from [here](https
 $env:PKG_CONFIG_PATH="<download_folder>\poppler-24.08.0\Library\lib\pkgconfig"
 ```
 
+```powershell
+uv venv
+.venv\Scripts\activate
+pip install cmake
+uv sync
+```
+
 ```bash
 # conda remove -n pdf_to_markdown --all
 uv venv
-# .venv\Scripts\activate
 source .venv/bin/activate
 uv sync
-# Windows
-pip install cmake
-# End Windows
 # Linux
 sudo apt update
 sudo apt install g++ -y

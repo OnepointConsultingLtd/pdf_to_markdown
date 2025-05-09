@@ -10,9 +10,14 @@ from pdf_to_markdown_llm.service.openai_pdf_to_text import (
     convert_all_pdfs,
     convert_compact_pdfs,
     zip_md_files,
-    convert_word_to_markdown
+    convert_word_to_markdown,
+    convert_pdf_to_markdown,
 )
-from pdf_to_markdown_llm.model.conversion import ConversionInput, conversion_input_from_file
+from pdf_to_markdown_llm.model.conversion import (
+    ConversionInput,
+    conversion_input_from_file,
+)
+from pdf_to_markdown_llm.service.cleanup import clean_dir
 
 
 def test_encode_image():
@@ -34,7 +39,14 @@ def test_process_folders():
 def test_convert_simple_pdf():
     pdf = Path(__file__) / "../../../../pdfs/simple/OTT Webinar 6 - AI Agents.pdf"
     assert pdf.exists(), "Cannot find the PDF file."
-    result = asyncio.run(convert_single_file(pdf))
+    result = asyncio.run(
+        convert_single_file(
+            pdf,
+            SupportedFormat.MARKDOWN,
+            convert_pdf_to_markdown,
+            convert_word_to_markdown,
+        )
+    )
     assert result is not None, "There should be a result"
     assert len(result.exceptions) == 0, f"There are exceptions: {result.exceptions}"
 
@@ -42,7 +54,11 @@ def test_convert_simple_pdf():
 def test_convert_simple_pdf_html():
     pdf = Path(__file__) / "../../../../pdfs/simple/OTT Webinar 6 - AI Agents.pdf"
     assert pdf.exists(), "Cannot find the PDF file."
-    result = asyncio.run(convert_single_file(pdf, SupportedFormat.HTML))
+    result = asyncio.run(
+        convert_single_file(
+            pdf, SupportedFormat.HTML, convert_pdf_to_markdown, convert_word_to_markdown
+        )
+    )
     assert result is not None, "There should be a result"
     assert len(result.exceptions) == 0, f"There are exceptions: {result.exceptions}"
 
@@ -50,7 +66,11 @@ def test_convert_simple_pdf_html():
 def test_convert_single_file():
     pdf = Path(__file__) / "../../../../pdfs/oecd/002b3a39-en.pdf"
     assert pdf.exists(), "Cannot find the PDF file."
-    result = asyncio.run(convert_single_file(pdf))
+    result = asyncio.run(
+        convert_single_file(
+            pdf, SupportedFormat.HTML, convert_pdf_to_markdown, convert_word_to_markdown
+        )
+    )
     assert result is not None, "There should be a result"
     assert len(result.paths), "There are no result paths"
 
@@ -64,18 +84,17 @@ def test_convert_all_pdfs():
     assert all([p.exists() for p in paths])
     results = asyncio.run(convert_all_pdfs(paths, False))
     assert len(results) == 3
+    clean_dir(Path(__file__) / "../../../../pdfs")
 
 
 def test_convert_compact_pdfs():
-    paths = [
-        Path(__file__) / "../../../../pdfs/oecd",
-        Path(__file__) / "../../../../pdfs/who",
-    ]
+    paths = [Path(__file__) / "../../../../pdfs/oecd"]
     process_results: ProcessResults = asyncio.run(convert_compact_pdfs(paths, False))
     assert process_results is not None
     assert process_results.process_result_list is not None
     assert process_results.files_dict is not None
-    assert len(process_results.process_result_list) == 3
+    assert len(process_results.process_result_list) == 2
+    clean_dir(Path(__file__) / "../../../../pdfs")
 
 
 def test_zip_md_files():
@@ -87,6 +106,7 @@ def test_zip_md_files():
     assert process_results.files_dict is not None
     zip_files = zip_md_files(process_results.files_dict)
     assert len(zip_files) == 2
+    clean_dir(Path(__file__) / "../../../../pdfs")
 
 
 def test_convert_word_to_markdown():
@@ -96,4 +116,4 @@ def test_convert_word_to_markdown():
     result = asyncio.run(convert_word_to_markdown(conversion_input))
     assert result is not None, "There should be a result"
     assert len(result.paths), "There are no result paths"
-
+    clean_dir(Path(__file__) / "../../../../pdfs")

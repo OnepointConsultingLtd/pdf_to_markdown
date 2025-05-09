@@ -5,13 +5,14 @@ import asyncio
 
 from pdf_to_markdown_llm.service.openai_pdf_to_text import (
     SupportedFormat,
-    convert_single_file,
     compact_markdown_files_from_list,
     convert_compact_pdfs,
 )
 from pdf_to_markdown_llm.model.process_results import ProcessResults
 from pdf_to_markdown_llm.service.gemini_pdf_to_text import convert_single_pdf
-
+from pdf_to_markdown_llm.service.cleanup import clean_dir
+from pdf_to_markdown_llm.service.analyze_files import analyze_file_sizes
+from pdf_to_markdown_llm.service.conversion_support import convert_single_file
 
 class Engine(StrEnum):
     OPENAI = "openai"
@@ -29,7 +30,7 @@ def cli():
     "-f",
     type=click.Path(exists=True, dir_okay=False, readable=True, path_type=str),
     multiple=True,
-    help="Specify multiple pdf file paths.",
+    help="Specify multiple pdf or docx file paths.",
 )
 @click.option(
     "--engine",
@@ -81,6 +82,31 @@ def convert_in_dir(dirs: list[str]):
     for generated_list in process_results.files_dict.values():
         for md_file in generated_list:
             click.secho(f"Generated {md_file}", fg="green")
+
+
+@cli.command()
+@click.option(
+    "--dirs",
+    "-d",
+    type=click.Path(exists=True, dir_okay=True, readable=True, path_type=str),
+    multiple=True,
+    help="Specify multiple directories to clean",
+)
+def clean_dirs(dirs: list[str]):
+    for dir in dirs:
+        clean_dir(Path(dir))
+
+
+@cli.command()
+@click.option(
+    "--dir",
+    "-d",
+    type=click.Path(exists=True, dir_okay=True, readable=True, path_type=str),
+    multiple=False,
+    help="Specify a directory to analyze",
+)
+def analyze_dir(dir: str):
+    analyze_file_sizes(Path(dir))
 
 
 if __name__ == "__main__":

@@ -23,13 +23,16 @@ class ConversionInput(BaseModel):
     format: SupportedFormat = Field(description="The format to convert the file to.")
 
 
-def conversion_input_from_file(file: Path, format: SupportedFormat = SupportedFormat.MARKDOWN) -> ConversionInput:
+def conversion_input_from_file(
+    file: Path, format: SupportedFormat = SupportedFormat.MARKDOWN
+) -> ConversionInput:
     current_date_time = datetime.now().isoformat()
     current_date_time = re.sub(r"[:.]", "", current_date_time)
     new_file_name = re.sub(r"\s+", "_", file.stem)
-    conversion_input = ConversionInput(file=file, 
-                                       current_date_time=current_date_time, 
-                                       new_file_name=new_file_name, 
-                                       format=format)
+    conversion_input = ConversionInput(
+        file=file,
+        current_date_time=current_date_time,
+        new_file_name=new_file_name,
+        format=format,
+    )
     return conversion_input
-

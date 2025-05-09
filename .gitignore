@@ -185,3 +185,5 @@ pdfs/oecd/*.md
 pdfs/oecd/*.jpg
 pdfs/oecd.zip
 pdfs/who.zip
+
+docs/clustre/**

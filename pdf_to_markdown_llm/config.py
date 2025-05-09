@@ -1,6 +1,7 @@
 import os
 
 from dotenv import load_dotenv
+from pdf_to_markdown_llm.logger import logger
 
 load_dotenv(".env")
 
@@ -23,6 +24,13 @@ class Config:
         gemini_api_key
     ), "Please specify the Gemini key."
     gemini_model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+
+    ollama_base_url = os.getenv(
+        "OLLAMA_BASE_URL", "http://localhost:11434/api/generate"
+    )
+    if not ollama_base_url or ollama_base_url.strip() == "":
+        logger.warning("OLLAMA_BASE_URL is not set, using default value")
+    ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2-vision:11b")
 
 
 cfg = Config()
