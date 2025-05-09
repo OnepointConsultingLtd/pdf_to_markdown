@@ -5,7 +5,10 @@ import httpx
 from pdf_to_markdown_llm.model.process_results import ProcessResult
 from pdf_to_markdown_llm.model.conversion import ConversionInput
 from pdf_to_markdown_llm.model.conversion import SupportedFormat
-from pdf_to_markdown_llm.service.conversion_support import encode_file, convert_image_to_file
+from pdf_to_markdown_llm.service.conversion_support import (
+    encode_file,
+    convert_image_to_file,
+)
 from pdf_to_markdown_llm.config import cfg
 from pdf_to_markdown_llm.logger import logger
 
@@ -64,16 +67,20 @@ async def convert_pdf_to_markdown(conversion_input: ConversionInput) -> ProcessR
             }
             async with httpx.AsyncClient() as client:
                 try:
-                    response = await client.post(cfg.ollama_base_url, json=payload, timeout=600)
+                    response = await client.post(
+                        cfg.ollama_base_url, json=payload, timeout=600
+                    )
                     response.raise_for_status()
                     res = response.json().get("response", "")
-                    process_result.paths.append(file.parent / f"{new_file_name}_{current_date_time}_{i+1}.md")
+                    process_result.paths.append(
+                        file.parent / f"{new_file_name}_{current_date_time}_{i+1}.md"
+                    )
                     process_result.paths[-1].write_text(res)
                     logger.info(f"Extracted {file} using {cfg.ollama_model}.")
                 except Exception as e:
                     logger.exception(f"Cannot process {file}: {str(e)}")
                     process_result.exceptions.append(e)
-                
+
     except Exception as e:
         logger.exception(f"Cannot process {file}")
 

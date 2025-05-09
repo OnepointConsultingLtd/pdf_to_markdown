@@ -14,6 +14,7 @@ from pdf_to_markdown_llm.service.cleanup import clean_dir
 from pdf_to_markdown_llm.service.analyze_files import analyze_file_sizes
 from pdf_to_markdown_llm.service.conversion_support import convert_single_file
 
+
 class Engine(StrEnum):
     OPENAI = "openai"
     GEMINI = "gemini"

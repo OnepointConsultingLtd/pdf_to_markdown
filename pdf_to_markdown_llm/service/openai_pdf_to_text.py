@@ -1,6 +1,7 @@
 import asyncio
 import re
 import zipfile
+from typing import Callable, Awaitable
 
 from pathlib import Path
 from collections import defaultdict
@@ -18,7 +19,13 @@ from pdf_to_markdown_llm.model.conversion import (
     SupportedFormat,
     FILE_EXTENSION,
 )
-from pdf_to_markdown_llm.service.conversion_support import encode_file, process_folders, convert_single_file, convert_image_to_file
+from pdf_to_markdown_llm.service.conversion_support import (
+    encode_file,
+    process_folders,
+    convert_single_file,
+    convert_image_to_file,
+    convert_all_recursively,
+)
 
 
 CANNOT_CONVERT = "Cannot convert"
@@ -41,38 +48,42 @@ CONVERSION_PROMPTS = {
 openai_client = AsyncOpenAI()
 
 
-async def convert_all_pdfs(
-    folders: list[Path | str], delete_previous: bool = False
-) -> list[ProcessResult]:
-    process_results = []
-    for path in process_folders(folders):
-        if delete_previous:
-            remove_expressions = ["**/*.txt", "**/*.jpg", "**/*.md", "**/*.html"]
-            for expression in remove_expressions:
-                for txt_file in path.rglob(expression):
-                    txt_file.unlink()
-        files = [file for file in path.rglob("*") if file.suffix.lower() == ".pdf"]
-        for pdf in files:
-            logger.info(f"Started processing {pdf}")
-            process_result = await convert_single_file(
-                pdf,
-                SupportedFormat.MARKDOWN,
-                convert_pdf_to_markdown,
-                convert_word_to_markdown,
-            )
-            process_results.append(process_result)
-            logger.info(f"Finished processing {pdf}")
-    return process_results
-
-
 async def convert_compact_pdfs(
     folders: list[Path | str], delete_previous: bool = False
 ) -> ProcessResults:
-    process_result_list = await convert_all_pdfs(folders, delete_previous)
+    process_result_list = await convert_all_recursively(folders, convert_file, delete_previous)
     files_dict = await compact_files(folders)
     return ProcessResults(
         process_result_list=process_result_list, files_dict=files_dict
     )
+
+
+ConversionFunction = Callable[[ConversionInput], Awaitable[ProcessResult]]
+
+def convert_file(file: Path, format: SupportedFormat) -> ProcessResult:
+    """
+    Convert a single file to the specified format using appropriate conversion functions.
+    
+    Args:
+        file: Path to the file to convert
+        format: Target format for conversion
+        
+    Returns:
+        ProcessResult containing conversion results and any errors
+        
+    Raises:
+        ValueError: If file format is not supported
+    """
+    try:
+        return convert_single_file(
+            file,
+            format,
+            convert_pdf_to_markdown,
+            convert_word_to_markdown,
+        )
+    except Exception as e:
+        logger.exception(f"Failed to convert file {file}: {str(e)}")
+        raise
 
 
 async def convert_word_to_markdown(conversion_input: ConversionInput) -> ProcessResult:
