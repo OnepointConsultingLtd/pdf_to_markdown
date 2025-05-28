@@ -1,7 +1,11 @@
 from pathlib import Path
 
 from docling.document_converter import DocumentConverter
-from pdf_to_markdown_llm.model.conversion import ConversionInput, SupportedFormat
+from pdf_to_markdown_llm.model.conversion import (
+    ConversionInput,
+    SupportedFormat,
+    RecursiveConversionInput,
+)
 from pdf_to_markdown_llm.model.conversion import conversion_input_from_file
 from pdf_to_markdown_llm.service.conversion_support import convert_all_recursively
 
@@ -30,5 +34,7 @@ async def convert_single_file(file: Path, format: SupportedFormat) -> Path:
     return convert_document_to_markdown(conversion_input)
 
 
-async def convert_folders(folders: list[Path | str], format: SupportedFormat, extensions: list[str] = [".pdf"]) -> list[Path]:
-    return await convert_all_recursively(folders, convert_single_file, format, extensions)
+async def convert_folders(
+    recursive_conversion_input: RecursiveConversionInput,
+) -> list[Path]:
+    return await convert_all_recursively(recursive_conversion_input)

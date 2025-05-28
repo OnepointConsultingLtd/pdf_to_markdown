@@ -18,6 +18,7 @@ from pdf_to_markdown_llm.model.conversion import (
     ConversionInput,
     SupportedFormat,
     FILE_EXTENSION,
+    RecursiveConversionInput,
 )
 from pdf_to_markdown_llm.service.conversion_support import (
     encode_file,
@@ -51,7 +52,14 @@ openai_client = AsyncOpenAI()
 async def convert_compact_pdfs(
     folders: list[Path | str], delete_previous: bool = False
 ) -> ProcessResults:
-    process_result_list = await convert_all_recursively(folders, convert_file, delete_previous)
+    process_result_list = await convert_all_recursively(
+        RecursiveConversionInput(
+            folders=folders,
+            convert_single_file=convert_file,
+            delete_previous=delete_previous,
+            extensions=[".pdf"],
+        )
+    )
     files_dict = await compact_files(folders)
     return ProcessResults(
         process_result_list=process_result_list, files_dict=files_dict
@@ -60,17 +68,18 @@ async def convert_compact_pdfs(
 
 ConversionFunction = Callable[[ConversionInput], Awaitable[ProcessResult]]
 
+
 def convert_file(file: Path, format: SupportedFormat) -> ProcessResult:
     """
     Convert a single file to the specified format using appropriate conversion functions.
-    
+
     Args:
         file: Path to the file to convert
         format: Target format for conversion
-        
+
     Returns:
         ProcessResult containing conversion results and any errors
-        
+
     Raises:
         ValueError: If file format is not supported
     """

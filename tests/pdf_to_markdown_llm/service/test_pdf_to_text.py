@@ -12,10 +12,11 @@ from pdf_to_markdown_llm.service.openai_pdf_to_text import (
     zip_md_files,
     convert_word_to_markdown,
     convert_pdf_to_markdown,
-    convert_file
+    convert_file,
 )
 from pdf_to_markdown_llm.model.conversion import (
     conversion_input_from_file,
+    RecursiveConversionInput,
 )
 from pdf_to_markdown_llm.service.cleanup import clean_dir
 
@@ -82,7 +83,17 @@ def test_convert_all_pdfs():
         Path(__file__) / "../../../../pdfs/who",
     ]
     assert all([p.exists() for p in paths])
-    results = asyncio.run(convert_all_recursively(paths, convert_file, False))
+
+    results = asyncio.run(
+        convert_all_recursively(
+            RecursiveConversionInput(
+                folders=paths,
+                convert_single_file=convert_file,
+                delete_previous=False,
+                extensions=[".pdf"],
+            )
+        )
+    )
     assert len(results) == 3
     clean_dir(Path(__file__) / "../../../../pdfs")
 
