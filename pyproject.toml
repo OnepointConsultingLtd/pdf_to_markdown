@@ -17,6 +17,7 @@ dependencies = [
     "plum-dispatch>=1.7.4",
     "spire-doc>=13.3.8",
     "docling>=2.31.0",
+    "pypdf2>=3.0.1",
 ]
 
 
